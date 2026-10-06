@@ -4,7 +4,6 @@
 # You can add tables of your own (for example [dense] model = "...") and read them in your
 # retrievers with cfg.table("dense").
 
-# "498E" or "598E"; 598E switches on the checks for the rider.
 section = "498E"
 
 [run]
