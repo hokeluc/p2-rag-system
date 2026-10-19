@@ -25,7 +25,16 @@ The minimum detectable difference is the smallest gap this many queries could re
 
 For each of `dense`, `hybrid` and `rerank`, one or two sentences: the embedding model, how documents were chunked, what was fused and how, how many candidates the reranker saw, and anything you changed from the 12 and 13 lab code.
 
-TODO: describe your three systems.
+Each model that explicitly looks at chunks splits documents
+into chunks of 300 words, with each chunk other than the first
+using a pre-chunk overlap window of 50 words as to minimize
+truncating sentences.
+
+The `dense` retrieval strategy uses the dense retrieval model to encode each document's chunk, which then is combined with the encoded query to form the matrix product/cosine similarity between the chunk and the query vector. Each document is scored off of its best-performing chunk.
+
+The `hybrid` retrieval strategy uses both dense retrieval and the BM25 algorithm to address term and semantic match goals in the same strategy. For each score per algorithm, the strategy uses reciprocal rank fusion to aggregate the results of the two algorithms. My implementation uses ``p2.toml`` to allow the user to specify the constant term for RRF, but the default is ``k = 60.``
+
+The `rerank` retrieval strategy uses the `hybrid` strategy to initially rank the documents in relation to the query, and then uses structured output definitions, a (potentially truncated) document, and an accompanying prompt to pass to an LLM agent to rerank the documents.
 
 ### Practice queries (20)
 
@@ -97,14 +106,26 @@ Which differences are distinguishable from zero and which are not?
 What is the minimum detectable difference at 20 queries, and what does that say about any gap smaller than it?
 Which claim from lecture 12 or 13 did your numbers support, and which did they leave open?
 
-TODO: write what the practice-query intervals let you claim.
+The 95% PI for the difference in strategy by metric tells us if we can confidently say that
+a strategy is better for a corpus given the bootstrap distribution. If 0 is included in the distribution, we can't conclude the strategies are distinguishable in a specific direction.
+
+All pairs that did not include rerank were indistiguishable from each other for every metric.
+That means that the hybrid and dense strategies are not indistinguishable, as well as the hybrid / BM25 and dense / BM25 strategies.
+
+The rerank strategy performs better than the dense retrieval and hybrid strategies across all three strategies. The rerank strategy performs better than BM25 on the Recall and MRR metrics, but is indistinguishable to BM25 on the nDCG metric, so it could be argued that both algorithms return documents with similar amounts of relevance to the query at hand.
+
+The minimum detectable difference at 20 queries is the threshold in which the difference in means for the pair is a statistically significant result. Below that threshold, the difference in means is not statistically significant, and can be attributed to irreducible noise in data.
+
+The numbers above support the idea of the massive gains in retrieval outcomes when an LLM-assisted rerank step is added to an existing retrieval algorithm strategy. The scores by metric per query class also support the idea of BM25 and Dense retrieval achieving specific purposes - matching on exact terms and words vs. matching on semantic meaning. The hybrid and rerank algorithm show the gains on mixed queries and all queries as a result of their combined and LLM-assisted extra approaches respectively.
 
 ---
 
 ## 2. Stage 1 - cited answers on the 12 shared questions
 
 <!-- p2:begin answers -->
-_No answers files yet: run `uv run p2 answer --corpus shared --system NAME`, then `uv run p2 score`._
+| Label | System | Verified (in) | 95% interval | not_found (in) | Declined (out) | 95% interval | Quotes found |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| rerank | rerank | 8 of 8 (100%) | [0.676, 1.000] | 0 of 8 (0%) | 4 of 4 (100%) | [0.510, 1.000] | 13 of 13 |
 <!-- p2:end answers -->
 
 Which system answered, and why that one?
@@ -114,7 +135,47 @@ Then read three in-corpus answers that `uv run p2 verify` passed.
 For each one, open the cited chunk and say whether the quote really supports the claim next to it.
 The check proves a quote is a real piece of the chunk and cannot prove that it supports the claim, so this reading is the part only you can do.
 
-TODO: write your answer choices and your three-answer audit.
+I used the rerank system to answer the test questions, as it was the best performing with a small time and token cost compared to the other strategies.
+
+Keeping `prompts/answer.txt` as is returns a 100% verified and 100% declined score.
+Commenting out the structured notes (third line) in `prompts/answer.txt` returns the same metrics above.
+Commenting out the answer directions (second line) also returns the same metrics above, which means the structured output does a lot of heavy lifting. I can verify separate Claude calls were made because results were not cached and each check took at least a few seconds to run (>3.4 s).
+
+```
+"claims": [
+        {
+          "text": "The operator must contact MSHA within 15 minutes at the toll-free number once it knows or should know an accident involving death occurred.",
+          "chunk_id": "cfr30-50.10#0",
+          "quote": "The operator shall immediately contact MSHA at once without delay and within 15 minutes at the toll-free number, 1-800-746-1553, once the operator knows or should know that an accident has occurred involving:\n\n(a) A death of an individual at the mine;"
+        }
+      ],
+
+"claims": [
+        {
+          "text": "The incombustible content of the combined coal dust, rock dust, and other dust shall be not less than 80 percent where rock dust is required.",
+          "chunk_id": "cfr30-75.403#0",
+          "quote": "it shall be distributed upon the top, floor, and sides of all underground areas of a coal mine and maintained in such quantities that the incombustible content of the combined coal dust, rock dust, and other dust shall be not less than 80 percent."
+        },
+        {
+          "text": "This 80 percent baseline applies specifically in the absence of methane; the requirement increases only when methane is present.",
+          "chunk_id": "cfr30-75.403#0",
+          "quote": "Where methane is present in any ventilating current, the percent of incombustible content of such combined dust shall be increased 0.4 percent for each 0.1 percent of methane."
+        }
+      ],
+
+"claims": [
+        {
+          "text": "Evacuation drills must be held at least once every six months.",
+          "chunk_id": "cfr30-57.4361#0",
+          "quote": "At least once every six months, mine evacuation drills shall be held to assess the ability of all persons underground to reach the surface or other designated points of safety within the time limits of the self-rescue devices that would be used during an actual emergency."
+        }
+      ],
+```
+
+Investigating each claim vs. quote for three 'verified' answers:
+- The first answer's claim supports the quote from the documents, but is less urgent in tone and leaves out the toll-free number. I would argue the toll-free number should be included in the response given the precariousness of the answer.
+- The second answer's first claim supports the quote from the documents. The second claim also supports the quote, but leaves out the quantifiable metrics that defines the increase in the requirement. However, the original question didn't ask for an answer with the presence of methane, so I would define the answer as acceptable.
+- The third answer's first claim summarizes the document's quote well and eliminates jargon that can be reasonably assumed (i.e. yes, you need to leave the mine in a normal fashion. Duh.)
 
 ---
 
@@ -259,6 +320,7 @@ Every trace in traces/ that records a Claude call:
 
 | Trace | System | Spans | Claude calls | Saved | Input tokens | Output tokens | Seconds | Input per span | Output per span | Seconds per span |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| traces/answers-rerank.jsonl | rerank | 12 | 24 | 12 | 225,664 | 13,231 | 176.5 | 18,805 | 1,103 | 14.7 |
 | traces/shared-practice-rerank.jsonl | rerank | 20 | 20 | 2 | 305,186 | 4,533 | 90.6 | 15,259 | 227 | 4.5 |
 | traces/shared-test-rerank.jsonl | rerank | 40 | 40 | 0 | 581,168 | 17,450 | 258.3 | 14,529 | 436 | 6.5 |
 
