@@ -23,6 +23,10 @@ tokenizer = "codes"
 k1 = 0.9
 b = 0.4
 
+[hybrid]
+# Reciprocal rank fusion constant: each item scores the sum of 1 / (rrf_k + rank) over the rankings.
+rrf_k = 60
+
 [answer]
 # How many chunks `p2 answer` sends to Claude with each question.
 top = 5
