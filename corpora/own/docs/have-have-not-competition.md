@@ -1,0 +1,7 @@
+# Have/Have-Not Competition
+
+The Have/Have-Not Competition is a weekly competition that began in Big Brother 11 (US) and ended in Big Brother 15 (US). Houseguests are split into two or three teams. The first team (if there are two teams) or first two teams (if there are three teams) to complete the competition are the Haves for the week. The members of the losing team become the Have-Nots. The Have-Nots are only allowed to eat slop and two other foods chosen by America, and required to take cold showers and sleep in the Have-Not Bedroom. The Head of Household is automatically a Have.
+
+The competition was a re-envisioning of the original Food Competition used in earlier seasons. Although the specifics of the Have/Have-Not Competitions tend to vary, many tend to revolve around food, although, as pictured here, some competitions do not. Many competitions are quite outrageous, including some where the Head of Household, who hosts the competition, must wear a ridiculous costume of some sort.
+
+Sometimes, there will not be a Have/Have-Not competition. In such cases, either the HOH will choose the Have-Nots for the week, or the Have-Nots will be determined by the order in which houseguests drop out of an endurance-style HOH competition, or there will be no Have-Nots at all. During the Coaches phase of Big Brother 14 (US), the winner of the Coaches competition would choose the Have-Nots.
