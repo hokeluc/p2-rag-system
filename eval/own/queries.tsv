@@ -2,3 +2,35 @@
 # origin is hand when you wrote the query yourself and claude when a model drafted it; at least 10 must be hand.
 # class is a word you choose, for example identifier, paraphrase or mixed as in the shared sets; scores are reported per class.
 # Lines that start with # are comments, so delete these lines or keep them, as you like.
+# HAND QUERIES 
+o01	identifier	Big Brother 19	hand
+o02	identifier	Brenchel	hand
+o03	identifier	The Wall	hand
+o04	paraphrase	Did Frankie Grande make Zach Rancey one of his targets during one of his Head of Household reigns?	hand
+o05	paraphrase	Which season was the Team America twist played on?	hand
+o06	paraphrase	Did Americory get evicted back to back on the season they played? Which season did the play?	hand
+o07	mixed	Who won Big Brother 4, and how did the jury vote?	hand
+o08	mixed	Who was part of the F.A.P alliance in Big Brother 28? Did they trust each other?	hand
+o09	mixed	Which all-black alliance controlled and ran the jury phase in Big Brother 23, and why was it historic?	hand
+o10	mixed	Which icons entered the house in Big Brother 28?	hand
+# CLAUDE QUERIES
+c01	identifier	Pandora's Box	claude
+c02	identifier	Golden Key	claude
+c03	identifier	Coup d'Etat	claude
+c04	identifier	Slop	claude
+c05	identifier	The Saboteur	claude
+c06	identifier	Four Horsemen	claude
+c07	paraphrase	What did houseguests have to eat as a punishment when they lost the food competition?	claude
+c08	paraphrase	Which twist put a hidden player in the house to cause chaos for a cash reward if they stayed undetected?	claude
+c09	paraphrase	How could getting your partner evicted protect you from the block for several weeks?	claude
+c10	paraphrase	Which twist gave the Head of Household a perk while sending something bad into the house, and when did it stop appearing?	claude
+c11	paraphrase	Which twist let a fan-chosen houseguest swap themselves into a veto competition spot?	claude
+c12	paraphrase	In which season could the final two cancel jury votes?	claude
+c13	paraphrase	Where do newcomers or fake-evicted houseguests stay when they are hidden from the main house?	claude
+c14	mixed	Who were the members of the Four Horsemen in Big Brother 5, and which of them defected?	claude
+c15	mixed	Which Big Brother 14 alliance was built around Janelle, and how many votes were cast against it?	claude
+c16	mixed	Who was the first Saboteur in Big Brother 12, and why was she evicted?	claude
+c17	mixed	Which Big Brother 12 alliance included Enzo, Hayden, Lane and Matt?	claude
+c18	mixed	When did the Have/Have-Not competition start and end in the US version?	claude
+c19	mixed	Who did America pick to receive the Coup d'Etat in Big Brother 11, and how did they use it?	claude
+c20	mixed	Which seasons brought back returning players, and how were the All-Stars chosen in Big Brother 7?	claude
