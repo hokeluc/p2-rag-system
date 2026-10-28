@@ -47,6 +47,7 @@ Scores per system.
 | dense | 0.558 | 0.562 | 0.480 |
 | hybrid | 0.592 | 0.471 | 0.443 |
 | rerank | 0.733 | 0.775 | 0.723 |
+| rerank_c10 | 0.592 | 0.683 | 0.596 |
 
 20 judged queries; nDCG uses binary labels; a random ranking of the 2,484 documents would get recall@10 near 0.004.
 <!-- p2:end shared-practice -->
@@ -68,6 +69,9 @@ The same scores per query class.
 | rerank | Recall@10 | 0.643 | 0.595 | 1.000 |
 | rerank | MRR@10 | 0.714 | 0.714 | 0.917 |
 | rerank | nDCG@10 | 0.659 | 0.614 | 0.925 |
+| rerank_c10 | Recall@10 | 0.500 | 0.405 | 0.917 |
+| rerank_c10 | MRR@10 | 0.524 | 0.571 | 1.000 |
+| rerank_c10 | nDCG@10 | 0.460 | 0.440 | 0.936 |
 <!-- p2:end shared-practice-classes -->
 
 Differences between every pair of systems, each with its paired interval and the minimum detectable difference.
@@ -93,8 +97,20 @@ Differences between every pair of systems, each with its paired interval and the
 | rerank minus hybrid | Recall@10 | +0.142 | [+0.050, +0.258] | 0.160 | rerank higher |
 | rerank minus hybrid | MRR@10 | +0.304 | [+0.140, +0.482] | 0.249 | rerank higher |
 | rerank minus hybrid | nDCG@10 | +0.280 | [+0.150, +0.417] | 0.194 | rerank higher |
+| rerank_c10 minus bm25 | Recall@10 | -0.033 | [-0.250, +0.192] | 0.324 | not distinguishable |
+| rerank_c10 minus bm25 | MRR@10 | +0.176 | [-0.099, +0.436] | 0.382 | not distinguishable |
+| rerank_c10 minus bm25 | nDCG@10 | +0.077 | [-0.166, +0.314] | 0.347 | not distinguishable |
+| rerank_c10 minus dense | Recall@10 | +0.033 | [-0.125, +0.192] | 0.231 | not distinguishable |
+| rerank_c10 minus dense | MRR@10 | +0.121 | [-0.092, +0.325] | 0.307 | not distinguishable |
+| rerank_c10 minus dense | nDCG@10 | +0.116 | [-0.064, +0.286] | 0.254 | not distinguishable |
+| rerank_c10 minus hybrid | Recall@10 | +0.000 | [+0.000, +0.000] | - | identical on every query |
+| rerank_c10 minus hybrid | MRR@10 | +0.213 | [+0.022, +0.402] | 0.275 | rerank_c10 higher |
+| rerank_c10 minus hybrid | nDCG@10 | +0.152 | [+0.036, +0.272] | 0.171 | rerank_c10 higher |
+| rerank_c10 minus rerank | Recall@10 | -0.142 | [-0.258, -0.050] | 0.160 | rerank higher |
+| rerank_c10 minus rerank | MRR@10 | -0.092 | [-0.250, +0.033] | 0.205 | not distinguishable |
+| rerank_c10 minus rerank | nDCG@10 | -0.127 | [-0.257, -0.009] | 0.177 | rerank higher |
 
-The interval is a paired bootstrap (10,000 resamples of the queries); MDD is the smallest difference this many queries detect 80% of the time.
+The interval is a paired bootstrap (10,000 resamples of the queries); MDD is the smallest difference this many queries detect 80% of the time. Two systems that score the same on every query have no interval to speak of, so their MDD is shown as -.
 <!-- p2:end shared-practice-pairs -->
 
 The 40 test queries have no answer key in this repo.
@@ -327,7 +343,12 @@ Which differences are distinguishable and which are not, at your gold-set size?
 Do the `hand` queries and the `claude` queries tell the same story?
 Did your prediction in `DECISIONS.md` prompt 1 hold?
 
-TODO: write what your own-corpus intervals let you claim.
+The only distinguishable differences at my gold-set size include:
+- Rerank returns higher MRR and nDCG scores when compared to BM25 retrieval for the gold set.
+- Rerank returns higher nDCG scores when compared to hybrid retrieval for the gold set.
+In terms of comparing retrieval metrics for Claude's queries vs. my queries:
+- Claude queries return higher MRR scores on BM25 retrieval when compared to hand queries.
+
 
 ---
 
@@ -374,8 +395,6 @@ What did you change, what happened, and does the interval support the claim you 
 If the result is not distinguishable, say what size of effect your gold set could have seen.
 Read the queries at the top of each list in the second table, and say whether your change explains them.
 
-TODO: write the ablation: the one change, the hypothesis, the result and the claim.
-
 I predict changing the BM25 tokenizer to the tokenizer used in the lab will lower my MRR@10 metrics across the shared corpus because the lab tokenizer is a lighter version of the current tokenizer used for learning purposes and not optimized for creating optimal tokens.
 
 The BM25 ablation vs the normal BM25 algorithm on the shared corpus is not distinguishable in terms of the interval drawn from the bootstrap distribution in terms of MRR, Recall, and nDCG metrics, but when applied on my own corpus, the ablation gives a worse reciprocal rank metric in some cases when compared to the normal BM25 algorithm. 
@@ -391,11 +410,22 @@ Take at least five, and read what the system returned next to what was relevant.
 Then sort the failures by cause, for example a vocabulary mismatch, near-duplicate documents, a chunk that cut the answer in half, a query that is ambiguous, or a label that was wrong, because sometimes the gold set is what failed.
 
 | qid | what the best system returned | what was relevant | cause | what you would try |
-|c09|big-brother-13-us|golden-key|---|---|
-|c20|big-brother-7-us|returning-players|---|---|
-|o07|winners-us|big-brother-4-us|---|---|
-|o10|the-icons|big-brother-28-us|---|---|
+|c09|big-brother-13-us|golden-key|Vocabulary mismatch - The golden-key document doesn't quite explain that the other duo is given immunity, which is what the question asks|I'm actually okay with this occurring, I would like to test other questions surrounding the twist to see if the season twist page is always referenced|
+|c20|big-brother-7-us|returning-players|Returned Big Brother 7 as the top rank because it was specifically referenced, returning players page was ranked 3|This also makes sense because Big Brother 7 was specifically asked, although if we limit our top k retrieved documents to less than 3, this would affect our final answer, so potentially keep k high|
+|o07|winners-us|big-brother-4-us|Question asked specifically for winners, but the top-ranked page does not name all winners|Perform more verification when corpus is ingested to make sure pages contain all information from the wiki when viewed on web|
+|o10|the-icons|big-brother-28-us|It viewed the specific alliance that the icon made, which is more specific information than the season page|I would edit my gold set here and make this the utmost page of relevance, as it's focused on the icons' bond|
 
+Three of the four queries where the rerank system 'failed' on the Big Brother corpus were an issue of the corpus itself or implicit assumptions I made about the documents and then missed when I manually reviewed the documents.
+- For example, the Golden Key wiki page mismatch is more of a semantics issue - it explains the houseguests and their strategy when receiving the keys vs. the Big Brother 13 Twists section actually explained the overall functionality regarding the twists.
+- Asking about the winner of Big Brother 4 returned the winners page, which in terms of semantics is very fitting, but the winners page did not return the winners table correctly when parsed into a Markdown file, so the top-ranked file didn't have the exact term matching when compared to the Big Brother 4 season file (i.e. the winner and jury vote in a tabular structure).
+
+If I were to build a RAG tailored towards this corpus in the future, I would go through a more (painstaking) process of verifying complete content in each document, as well as creating a more diverse and complete gold set and evaluation criterion (i.e. a more in-depth query relevance workflow similar to the questions.tsv usage for the shared corpus). Many of the issues surrounding the current performance are the implicit assumptions I made while creating my gold set, so I would refine my ingestion and evaluation process to feel much more sound when evaluating performance and failure.
+
+I evaluated one more query to meet the five-query requirement, from the bm25 retrieval algorithm:
+| qid | what the best system returned | what was relevant | cause | what you would try |
+|o01|records-statistics|big-brother-19|Vocabulary mismatch - BM25 uses the number 19 in place of keeping the actual term together|Hybrid and reranker retrieval would keep the semantic meaning of the term together!|
+
+The multi-word term exposes the issue with using BM25 as the sole retrieval strategy, as the algorithm like splits up the term into multiple tokens. Using other retrieval strategies that embed semantic relationships could (and do) help remedy this issue.
 
 ---
 
@@ -408,7 +438,28 @@ Did the winner change between the shared corpus and yours?
 Why, or why not: what is different about the two collections (document length, vocabulary, identifiers, near-duplicates, how the queries were written), and which of your explanations did you test and which are guesses?
 Say what 20 queries on one side and your gold-set size on the other cannot support.
 
-TODO: write the cross-corpus comparison.
+*Shared Corpus Results*
+| System | Recall@10 | MRR@10 | nDCG@10 |
+| --- | ---: | ---: | ---: |
+| bm25 | 0.625 | 0.507 | 0.518 |
+| dense | 0.558 | 0.562 | 0.480 |
+| hybrid | 0.592 | 0.471 | 0.443 |
+| rerank | 0.733 | 0.775 | 0.723 |
+
+*Own Corpus Results*
+| System | Recall@10 | MRR@10 | nDCG@10 |
+| --- | ---: | ---: | ---: |
+| bm25 | 0.833 | 0.681 | 0.717 |
+| dense | 0.867 | 0.804 | 0.819 |
+| hybrid | 0.867 | 0.784 | 0.803 |
+| rerank | 0.933 | 0.894 | 0.904 |
+| ablation/bm25_lab | 0.800 | 0.670 | 0.701 |
+
+Cross-corpus comparison reveals that the rerank system is the best retrieval system for both corpora, with the highest Recall, MRR, and nDCG@10 for both corpora, so I have the same winner across both corpora I evaluated.
+
+I'm not as surprised that rerank remained the ultimate strategy for both corpora, as both corpora are pretty complex and have their own strategies that would lead to an agent being able to utilize both the query and previous ranks to meet the query specs.
+
+The shared corpora has more documents, but the Big Brother corpora is longer and has unique elements such as Wiki dropdowns and tables that had to be parsed into Markdown, which term-frequency algorithms like BM25 cannot interpret appropriately. I also wrote the same types of queries that were used for the shared corpora - identifier, mixed, and paraphrase categories, so both corpora had the same categories of questions in testing. The corpora do use different references - for example, the shared corpora uses specific numerical sequences to specify links to other documents, while the Big Brother corpora uses verbose terms to specify 'links' to other documents. I verified these claims using Claude Code in summarizing folder-level and document-level metadata in each corpus folder. My point here is that the corpora are not forest of terms but also not novels or extreme works of prose where semantics are everything for interpretation. The corpora represent a hybrid combination of the two extremes which would succeed with an agent-directed step for contextual help surrounding the use of loose terms in the Big Brother Wiki and the layered definitions in the shared corpus. Because we have 20 and 30 test queries respectively for the shared and personal corpus, we can only claim that rerank is the optimal strategy for this query set and not other queries with strategies we haven't accounted for. We also see that many of our retrieval strategies are not distinguishable with a bootstrap distribution created from our test query sets across corpora, so we can't make any meaningful decisions whether one retrieval strategy is better if the bootstrap decision is insignificant. The 20 queries for the shared corpus retain the same categories as my gold set, but they are asking different things. The 20 pre-written queries for the shared corpus clarify paraphrased rules and ask for specific scenarios, while my gold-set asks basic information about season data and does not approach specific scenario data.
 
 ---
 
@@ -429,14 +480,6 @@ Whichever option you chose, write these five things:
 For a second ablation, write its hypothesis here before you run it, and commit it, so your history shows that it came first.
 For the hand and claude queries, do the same with your prediction before you score.
 
-### Claim-level faithfulness check (option 2)
-
-Claude's verdicts from `p2 judge` against your own verdicts in the calibration file.
-
-<!-- p2:begin stretch-judge -->
-_No judged answers yet (stretch option 2): `uv run p2 judge answers/shared/LABEL.json` writes them, your own verdicts go in answers/shared/LABEL.calibration.tsv, and then `uv run p2 score` fills this table._
-<!-- p2:end stretch-judge -->
-
 ### Cost and latency (option 3)
 
 The Claude calls, tokens and seconds in every trace you committed, and what a cheaper system or answers file saves against what it loses.
@@ -449,6 +492,7 @@ Every trace in traces/ that records a Claude call:
 | traces/answers-rerank.jsonl | rerank | 12 | 24 | 12 | 225,664 | 13,231 | 176.5 | 18,805 | 1,103 | 14.7 |
 | traces/own-own-rerank.jsonl | rerank | 30 | 30 | 0 | 440,775 | 7,240 | 140.1 | 14,692 | 241 | 4.7 |
 | traces/shared-practice-rerank.jsonl | rerank | 20 | 20 | 20 | 305,186 | 4,533 | 90.2 | 15,259 | 227 | 4.5 |
+| traces/shared-practice-rerank_c10.jsonl | rerank_c10 | 20 | 20 | 0 | 245,172 | 5,855 | 105.1 | 12,259 | 293 | 5.3 |
 | traces/shared-test-rerank.jsonl | rerank | 40 | 40 | 40 | 581,168 | 17,450 | 257.5 | 14,529 | 436 | 6.4 |
 
 A span is one query of a run, one question of an answers file, or one claim of a judged file. A saved reply costs nothing now, so it counts the tokens and the seconds of the call that made it.
@@ -460,6 +504,10 @@ Every pair of systems on the same queries where at least one calls Claude, the o
 | shared practice: bm25 minus rerank | 20 | -0.268 | [-0.508, -0.026] | 15,259 | 4.5 | rerank higher |
 | shared practice: dense minus rerank | 20 | -0.212 | [-0.383, -0.071] | 15,259 | 4.5 | rerank higher |
 | shared practice: hybrid minus rerank | 20 | -0.304 | [-0.482, -0.140] | 15,259 | 4.5 | rerank higher |
+| shared practice: bm25 minus rerank_c10 | 20 | -0.176 | [-0.436, +0.099] | 12,259 | 5.3 | not distinguishable |
+| shared practice: dense minus rerank_c10 | 20 | -0.121 | [-0.325, +0.092] | 12,259 | 5.3 | not distinguishable |
+| shared practice: hybrid minus rerank_c10 | 20 | -0.213 | [-0.402, -0.022] | 12,259 | 5.3 | rerank_c10 higher |
+| shared practice: rerank_c10 minus rerank | 20 | -0.092 | [-0.250, +0.033] | 3,001 | -0.7 | not distinguishable |
 | own: bm25 minus rerank | 30 | -0.214 | [-0.359, -0.074] | 14,692 | 4.7 | rerank higher |
 | own: dense minus rerank | 30 | -0.090 | [-0.225, +0.028] | 14,692 | 4.7 | not distinguishable |
 | own: hybrid minus rerank | 30 | -0.110 | [-0.237, +0.003] | 14,692 | 4.7 | not distinguishable |
@@ -482,42 +530,28 @@ Systems that do not call Claude, from traces/retrieval/ on the machine that last
 | traces/retrieval/shared-test-hybrid.jsonl | hybrid | 40 | 0.41 | 10.2 |
 <!-- p2:end stretch-cost -->
 
-### The grep agent (option 5)
-
-Your stretch run on some of your own queries against the four systems on the same queries.
-
+<!-- p2:begin stretch-judge -->
+_No judged answers yet (stretch option 2): `uv run p2 judge answers/shared/LABEL.json` writes them, your own verdicts go in answers/shared/LABEL.calibration.tsv, and then `uv run p2 score` fills this table._
+<!-- p2:end stretch-judge -->
 <!-- p2:begin stretch-agent -->
 _No stretch runs yet (stretch option 5): `uv run p2 run --corpus own --queries eval/own/agent.queries.tsv --system agent --stretch` writes one to runs/own/stretch/, then `uv run p2 score` fills this table._
 <!-- p2:end stretch-agent -->
-
-### Your stretch
-
-Write the five things here.
-
----
-
-## 9. 598E only - repeats and the pre-registered claim
-
-498E students can leave this section as it is; nothing checks it.
-598E students replace each line that starts with "598E: write", and `uv run p2 check --final` counts those lines as work still to do until they are gone.
-
-### Repeats on the shared corpus
-
-Three runs of the reranker on the practice queries, and three answers files, with their run-to-run spread and Wilson intervals.
-
 <!-- p2:begin repeats -->
 _No repeated runs or answers files yet (598E: `p2 run ... --repeat 3` and `p2 answer ... --repeat 3`)._
 <!-- p2:end repeats -->
 
-Does the reranker's gain over its first stage survive the run-to-run variation?
-Write what the spread is, how it compares with the gain, and what the Wilson intervals on the verified share and the declined share say about 8 and 4 questions.
+### Your stretch
 
-598E: write the repeats result here.
+1. Option 3 - Cost and Latency
+2. I reduced the amount of possible candidates that were to be reranked by the agent in the reranking strategy from 20 to 10. Claude still makes 1 call per query, but is required to rank less candidates and view less passages, potentially saving input tokens across the same ranked candidate list.
+3. stretch-cost:
 
-### The pre-registered claim
+| Cheaper minus dearer | Queries | MRR@10 difference | 95% interval | Input tokens saved per query | Seconds saved per query | Reading |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| shared practice: rerank_c10 minus rerank | 20 | -0.092 | [-0.250, +0.033] | 3,001 | -0.7 | not distinguishable |
 
-The claim, the smallest effect, the gold-set size and the test are in `PREREG.md`, committed before your own gold-set judgments.
-Here, say whether you followed the plan, what the interval turned out to be, and what that means.
-The outcome section of `PREREG.md` holds the short version.
+4. The interval shows that we can't distinguish a significant difference in mean reciprocal rank at 10 candidates when comparing reranking with 10 and 20 candidates, thus there's no statistically significant evidence in a change in performance when reranking 10 vs. 20 candidates. Because we can't distinguish a significant difference, we're unable to say that a specific candidate count is better or worse for the algorithm. Essentially, saving tokens by reducing the candidate count for reranking doesn't mean we have evidence that we limit or boost our RAG performance, but we do save tokens!
+5. I would likely expand my goal set and write more diverse queries to rebuild the bootstrap distribution that provides evidence for the results in making the ablation to the algorithm. Right now my goal set is 20 queries, but building it out would give me more personal confidence in the underlying distribution that the bootstrap is built on. I can also run more trace samples to quantify a mean/median change in input tokens saved, but I would need a larger goal set for that. As a result, I'd like to see a narrower difference in MRR interval or a distinguishable result in candidate use.
 
-598E: write the claim and its outcome here.
+---
+
